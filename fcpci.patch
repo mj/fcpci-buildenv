@@ -1,0 +1,108 @@
+diff -wur src/driver.c src/driver.c
+--- src/driver.c	2006-01-05 00:00:00.000000000 +0100
++++ src/driver.c	2011-10-26 10:44:58.365310437 +0200
+@@ -374,9 +374,9 @@
+ 			card->irq, 
+ 			&irq_handler, 
+ #if defined (__fcpci__) || defined (__fcpcmcia__)
+-			SA_INTERRUPT | SA_SHIRQ, 
++			IRQF_DISABLED | IRQF_SHARED, 
+ #else
+-			SA_INTERRUPT, 
++			IRQF_DISABLED, 
+ #endif
+ 			TARGET, 
+ 			card
+@@ -569,7 +569,7 @@
+ 		}
+ 	}
+ 	stop (card);
+-	capi_ctr_reseted (ctrl);
++	capi_ctr_down (ctrl);
+ #if defined (__fcpnp__)
+ 	pnp_disable_dev (card->dev);
+ #endif
+@@ -626,7 +626,7 @@
+ 	ctrl->release_appl =	release_appl;
+ 	ctrl->send_message =	send_msg;
+ 	ctrl->procinfo =	proc_info;
+-	ctrl->ctr_read_proc =	ctr_info;
++                
+ 	if (0 != (res = attach_capi_ctr (ctrl))) {
+ 		dec_use_count ();
+ 		stop (card);
+@@ -901,10 +901,10 @@
+ 
+ /*---------------------------------------------------------------------------*\
+ \*---------------------------------------------------------------------------*/
+-int driver_init (void) {
++int driver_init_avm (void) {
+ 
+ 	return (NULL != (capi_lib = link_library (NULL)));
+-} /* driver_init */
++} /* driver_init_avm */
+ 
+ /*---------------------------------------------------------------------------*\
+ \*---------------------------------------------------------------------------*/
+diff -wur src/driver.h src/driver.h
+--- src/driver.h	2006-01-05 00:00:00.000000000 +0100
++++ src/driver.h	2011-10-26 10:33:59.485310392 +0200
+@@ -23,7 +23,6 @@
+ #ifndef __have_driver_h__
+ #define __have_driver_h__
+ 
+-#include <linux/config.h>
+ #include <linux/skbuff.h>
+ #include <linux/capi.h>
+ #include <linux/list.h>
+@@ -98,7 +97,7 @@
+ 
+ /*---------------------------------------------------------------------------*\
+ \*---------------------------------------------------------------------------*/
+-extern int driver_init (void);
++extern int driver_init_avm (void);
+ extern void driver_exit (void);
+ 
+ /*---------------------------------------------------------------------------*\
+diff -wur src/main.c src/main.c
+--- src/main.c	2006-01-05 00:00:00.000000000 +0100
++++ src/main.c	2011-10-26 10:35:02.455310397 +0200
+@@ -20,9 +20,10 @@
+  * Contact: AVM GmbH, Alt-Moabit 95, 10559 Berlin, Germany, email: info@avm.de
+  */
+ 
++#define pci_module_init pci_register_driver
++
+ #include <stdarg.h>
+ #include <asm/uaccess.h>
+-#include <linux/config.h>
+ #include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+@@ -205,7 +206,7 @@
+ 	NOTE(PRODUCT_LOGO " found: port 0x%04x, irq %u\n", pars.port, pars.irq);
+ 
+ 	NOTE("Loading...\n");
+-	if (!driver_init ()) {
++	if (!driver_init_avm ()) {
+ 		ERROR("Error: Driver library not available.\n");
+ 		ERROR("Not loaded.\n");
+ 		return res;
+@@ -270,7 +271,7 @@
+ 	NOTE (PRODUCT_LOGO " found: port 0x%04x, irq %u\n", pars.port, pars.irq);
+ 
+ 	NOTE("Loading...\n");
+-	if (!driver_init ()) {
++	if (!driver_init_avm ()) {
+ 		ERROR("Error: Driver library not available.\n");
+ 		ERROR("Not loaded.\n");
+ 		return -EBUSY;
+@@ -378,7 +379,7 @@
+ 	}
+ 	return err;
+ #elif defined (__fcpcmcia__) || defined (__fcclassic__)
+-	if (!driver_init ()) {
++	if (!driver_init_avm ()) {
+ 		ERROR("Error: Driver library not available.\n");
+ 		ERROR("Not loaded.\n");
+ 		return -EBUSY;

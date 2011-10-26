@@ -1,0 +1,8 @@
+Simple build environment for compiling the kernel module for AVM Fritz!PCI
+ISDN cards on systems with more or less recent versions of the Linux
+kernel.
+
+Just run ./build-fcpci-patched.sh and the module will be installed at
+the correct location.
+
+2011-10-26: tested with kernel 2.6.38
